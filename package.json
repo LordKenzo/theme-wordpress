@@ -1,0 +1,46 @@
+{
+  "name": "base-1",
+  "version": "1.0.0",
+  "description": "Theme WordPress",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "start": "gulp",
+    "clean": "gulp clean",
+    "build": "gulp build --prod",
+    "bundle": "gulp bundle --prod",
+    "dev": "gulp dev"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "gulp": "^4.0.2",
+    "jquery": "^3.5.1",
+    "lodash": "^4.17.15",
+    "ramda": "^0.27.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.10.0",
+    "@babel/preset-env": "^7.10.0",
+    "@babel/preset-typescript": "^7.10.1",
+    "@babel/register": "^7.9.0",
+    "babel-loader": "^8.1.0",
+    "browser-sync": "^2.26.7",
+    "del": "^5.1.0",
+    "gulp-clean-css": "^4.3.0",
+    "gulp-if": "^3.0.0",
+    "gulp-imagemin": "^7.1.0",
+    "gulp-replace": "^1.0.0",
+    "gulp-sass": "^4.1.0",
+    "gulp-sourcemaps": "^2.6.5",
+    "gulp-zip": "^5.0.1",
+    "ts-loader": "^7.0.5",
+    "typescript": "^3.9.3",
+    "vinyl-named": "^1.1.0",
+    "webpack-stream": "^5.2.1",
+    "yargs": "^15.3.1"
+  }
+}
