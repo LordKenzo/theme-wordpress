@@ -15,6 +15,7 @@ import info from './package.json';
 
 const server = browserSync.create();
 const URL = 'http://base.local/';
+const themePlaceholder = '_themename';
 
 const prod = yargs.argv.prod;
 
@@ -145,7 +146,7 @@ export const watch = () => {
 export const compress = () => {
   return gulp
     .src(paths.package.src)
-    .pipe(replace('_themename', info.name.replace('-', '_')))
+    .pipe(replace(themePlaceholder, info.name.replace('-', '_')))
     .pipe(zip(`${info.name}.zip`.replace('-', '_')))
     .pipe(gulp.dest(paths.package.dest));
 };

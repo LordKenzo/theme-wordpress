@@ -9,12 +9,12 @@
             </a>
         </h2>
         <div>
-            <?php lftheme_post_meta() ?>
+            <?php _themename_post_meta() ?>
         </div>
         <div>
             <?php the_excerpt(); ?>
         </div>
-        <?php lftheme_readmore_link() ?>
+        <?php _themename_readmore_link() ?>
 
     <?php } ?>
     <?php the_posts_pagination() ?>

@@ -18,6 +18,6 @@ function _themename_admin_assets() {
 
 // add_action(action_name, function_name)
 
-add_action('wp_enqueue_scripts', 'lftheme_assets');
+add_action('wp_enqueue_scripts', '_themename_assets');
 
-add_action('admin_enqueue_scripts', 'lftheme_admin_assets');
+add_action('admin_enqueue_scripts', '_themename_admin_assets');

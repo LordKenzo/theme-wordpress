@@ -1,4 +1,12 @@
-In VSCode installati WordPress Snippets.
+# WordPress
+
+[Sito Italiano](https://it.wordpress.org/)
+[Sito Documentazione Codex](https://codex.wordpress.org/it:Main_Page)
+
+
+# Creare un Tema WordPress
+
+In VSCode installa `WordPress Snippets`.
 
 Possiamo dividere il tema in varie parti come: header - sidebar - navigation - content area - comment section - footer ecc..
 
@@ -10,7 +18,21 @@ Nella struttura di un template avrò, oltre ad index.php e style.css, la pagina 
 
 Vedi anche: https://wphierarchy.com/
 
-Il foglio di stile deve iniziare con dei metadati di info sul tema tra un commento.
+Il foglio di stile deve iniziare con dei metadati di info sul tema tra un commento:
+
+```css
+/*
+Theme name: Tema Custom
+Author: Lorenzo Franceschini
+Author URI: https://lorenzofranceschini.com
+Description: My first WordPress theme
+Version: 1.0
+Text Domain: base
+Tags: responsive, translation-ready, bootstrap
+*/
+```
+
+Le informazioni di base sono il nome del tema, l'autore e la versione.
 
 # Sistema di Gerarchia
 
@@ -280,7 +302,7 @@ Attento ai CONFLITTI DI NOME!
 
 E' importante capire che alcune funzionalità del menù WORDPRESS non saranno presenti se non sono presenti le funzioni di gestione in functions.php. Ad esempio potrei non avere i settaggi dei Widget e dei Menu senza gli hook e le relative funzioni: 
 
-```
+```php
 add_action( 'init', 'miotemplate_menus' );
 
 add_action( 'widgets_init', 'miotemplate_sidebar_registration' );
@@ -294,16 +316,35 @@ Sempre nel file **functions.php** posso trovare:
 
 * la funzione per inserire il menu consiste nel creare un array di posizioni del menù (Primary, Footer, Social, ecc...). Ogni template può avere una o più posizioni.
 
+```php
+function lf_menus() {
+    $locations = array(
+      'primary' => 'Desktop Primary Menu',
+      'footer' => 'Footer Menu'
+    );
+    register_nav_menus($locations);
+}
+
+add_action('init', 'lf_menus');
 ```
-$locations = array(
-  'primary' => 'Desktop Primary Menu',
-  'footer' => 'Footer Menu'
-)
+
+Creo un menù nella parte Admin del sito e nellì'header.php (fai attenzione in WordPress a specificare correttamente la location del menù o il codice seguente non funzionerà) inserisco, dove meglio credo (e dopo il tag body), il mio menù:
+
+```php
+<?php
+    wp_nav_menu(
+        array(
+            'menu' => 'primary',
+            'container' => '',
+            'theme_location' => 'primary'
+        )
+    );
+?>
 ```
 
 e nel codice in header.php avrò:
 
-```
+```php
 wp_nav_menu(
   array(
     'menu' => 'primary',
@@ -314,18 +355,72 @@ wp_nav_menu(
 );
 ```
 
-Ora in ul posso passare le mie classi del mio stile, avendo ripulite quelle che inserisce di default WordPress.
-Invece ora in items_wrap posso andare ad inserire le mie classi magari di Bootstrap:
+Se ispeziono il codice HTML posso notare che i miei tag `li` hanno le classi css impostato di default da WordPress: `page_item page-item-11`. WordPress wrappa il menù all'interno di un div con class `menu`.
 
+[Info](https://developer.wordpress.org/reference/functions/wp_nav_menu/)
+
+WordPress prevede che il container sia o un `div` o un `nav`, a cui posso associare delle classi e un id con `menu_class` e `menu_id`:
+
+```php
+wp_nav_menu(
+    array(
+        'menu' => 'primary',
+        'theme_location' => 'primary',
+        'container' => 'nav',
+        'container_class' => 'container-class',
+        'container_id' => 'container-id',
+        'menu_class' => 'menu-nav',
+        'menu_id' => 'primary-nav',
+        'link_before' => '<span class="text">',
+        'link_after'  => '</span>'
+    )
+);
 ```
+
+Con `container_id` e `container_class` aggiungo `id` e `class` al tag `nav` (o `div` se usavo un `div`).
+Con `menu_id` e `menu_class` invece imposto `id` e `class` al mio tag `ul` inserito da WordPress.
+Con `link_before` e `link_after` genero un anchora tag `a` con internamente uno `span`.
+
+Con `items_wrap` posso andare ad inserire le mie classi in `ul` sovrascrivendo `menu_class` e `menu_id` ma, soprattutto, posso ridefinire il mio wrapper, che di default è un tag `ul`, quindi lo uso se voglio specificare un tag diverso da `ul`. Attenzione ad inserire `%3$s` per avere al suo interno il contentuo:
+
+```php
 'items_wrap' => '<ul id="" class"navbar-nav flex-column text-sm-center text-md-left">%3$s</ul>'
+```
+
+ha più senso se volessi specificare un `div` al post di `ul`:
+
+```php
+'items_wrap' => '<div id="asd" class="asd">%3$s</div>',
 ```
 
 E per gli elementi li? Devo farlo da dentro la struttura del menu in WordPress. In Appearance -> Menus devo abilitare da Screen Options a in alto a destra le CSS Classes e Link Target. Ora posso specificare una CSS Classes per le mie voci di menù come ad esempio: "nav-item".
 
-Altro metodo è specificare il menu_class:
+Un altro metodo (forse il migliore) è quello di creare qualcosa di simile a:
+
+```php
+'add_li_class'  => 'mia-classe-1 altra-mia-classe',
+```
+
+e in functions.php utilizzo l'add_filter e l'hook `nav_menu_css_class`, devo passare anche un valore di priorità ed un valore di accepted_args:
 
 ```
+add_filter( $tag:string, $function_to_add:callable, $priority:integer, $accepted_args:integer )
+```
+
+```php
+function add_custom_class_on_li($classes, $item, $args) {
+  if(isset($args->add_li_class)) {
+      $classes[] = $args->add_li_class;
+  }
+  return $classes;
+}
+
+add_filter('nav_menu_css_class', 'add_custom_class_on_li', 1, 3);
+```
+
+Altro metodo è specificare il menu_class:
+
+```php
 <?php
     wp_nav_menu( array(
         'theme_location' => 'primary',
@@ -334,7 +429,7 @@ Altro metodo è specificare il menu_class:
 ?>
 ```
 
-e nel CSS avrò qualcosa di simile, dove rimpiazzerò #header con la classe o l'id del mio nav menù.
+e nel CSS avrò qualcosa di simile, dove rimpiazzerò #header con la classe o l'id del mio nav menù. Quindi in sostanza vado a cambiare il mio CSS e lo riadatto per WordPress.
 
 ```
 // container class
@@ -387,13 +482,353 @@ Altrimenti WordPress genera ed inserisce le seguenti classi CSS:
 .menu-item-home{} 
 ```
 
+Insomma abbiamo visto varie soluzioni per gestire il menù, sicuramente la soluzione più elegante è quella di usare add_filter.
+
+# Custom Logo e Title Dinamico
+
+Potrei avere nella barra della navigazione il Logo e volere inserire il titolo in maniera dinamica nella sezione `head`. Posso renderlo dinamico e cambiarlo da pannello admin. Utilizzo l'hook `after_setup_theme` e richiamo la funzione theme_support:
+
+```php
+
+function lf_theme_support() {
+  // Aggiunge il title nell'head - imposto da Site Idenity con Site Title e Tagline
+  add_theme_support('title-tag');
+  // Aggiunge la possibilità di selezionare il LOGO in Site Indentity in Customize Theme
+  add_theme_support('custom-logo');
+}
+
+add_action('after_setup_theme', 'lf_theme_support');
+```
+
+e al posto del logo "hardcoded" come ad es:
+
+```
+<img class="mb-3 mx-auto logo" src="images/logo.png" alt="logo" />
+```
+
+avrò:
+
+```php
+<?php
+  if(function_exists('the_custom_logo')) {
+    // Prelevo il custom_logo
+    $custom_logo_id = get_theme_mod('custom_logo');
+    // Creo un riferimento all'immagine (ottengo un array per questo prendo il primo)
+    $logo = wp_get_attachment_image_src($custom_logo_id)[0];
+    // Faccio l'output dell'immagine in img con un fallback a logo.jpg di default
+  }
+?>
+<img class="mb-3 mx-auto logo" src="<?php echo $logo ? $logo : get_template_directory_uri() . '/assets/images/logo.jpg' ?>" alt="logo" />
+```
+
+Per avere un site name dinamico, ad esempio potrei avere un `h2` nell'header che fa riferimento al nome del sito, posso fare:
+
+```php
+<?php echo get_bloginfo('name') ?>
+```
+
+Per impostarlo vado sempre nel Customize del Theme e in Site Identity trovo il mio Title.
+
+# Post Thumbnails
+
+Andiamo a creare una thumbnail per il nostro Post. In functions.php andiamo a scrivere:
+
+```php
+function lf_theme_support() {
+  // Aggiunge il title nell'head - imposto da Site Idenity con Site Title e Tagline
+  add_theme_support('title-tag');
+  // Aggiunge la possibilità di selezionare il LOGO in Site Indentity in Customize Theme
+  add_theme_support('custom-logo');
+  // Aggiungo la possibilità di inserire una thumbnail image al mio POST nella sezione admin per la creazione di nuovi POST
+  add_theme_support('post-thumbnail');
+}
+```
+
+# Single.php e Template Parts
+
+Possiamo pensare e suddividere i nostri POST a seconda del tipo di contenuto (gallery, articoli, ecc...), per questo motivo possiamo usare la cartella `template parts`.
+Partendo dal file `single.php` responsabile per la visualizzazione di un singolo post, ad esempio quando ho una URL del tipo: `miositowordpress.local/?p=22`, dove 22 è l'ID del post.
+
+```php
+<?php
+  get_header();
+?>
+  <article>
+  <?php
+    if(have_posts()) {
+      while(have_posts()) {
+        the_post();
+        // 1° parametro è il file path , il secondo è il type post
+        get_template_part('template-parts/content', 'article');
+      }
+    }
+  ?>
+  </article>
+<?php
+  get_footer();
+?>
+```
+
+il file path è il parziale del file che verrà costruito con il type, quindi il file sarà `content-article.php`:
+
+```php
+<?php
+  the_content();
+?>
+```
+
+Ora posso personalizzare aggiungendo tutti i metadati che compongono la mia pagina, come i tag, quando è stato pubblicato, l'image thumb, ecc...
+
+```php
+<div class="container">
+  <header class="content-header">
+    <div class="meta mb-3">
+      <span class="date"><?php the_date(); ?></span>
+      <?php
+        // primo parametro: cosa inserisco prima del tag
+        // cosa inserisco tra i tag
+        // cosa inserisco dopo il tag
+        the_tags(
+          '<span class="tag"><i class="fa fa-tag"</i>',
+          '</span><span class="tag"<i class="fa fa-tag"></i>',
+          '</span>'
+          );
+      ?>
+      
+      <span class="comment">
+        <a href="#comments"><i class="fa fa-comment"></i>
+          <?php comments_number(); ?>
+        </a>
+      </span>
+    </div>
+  </header>
+  <?php
+    the_content();
+  ?>
+
+  // Aggiungo i commenti
+  <?php 
+    comments_template();
+  ?>
+</div>
+```
+
+# Comments.php
+
+Il file comments.php è responsabile per la visualizzazione dei commenti al post. Creando il file comments.php, posso partire dal template twentytwenty-theme.
+
+In questo file posso accedere ad aventuali commenti del Post con: `have_comments();`, il numero di commenti con `get_comments_number()`, posso accedere ai singoli commenti con `wp_list_comments();` simile al `wp_nav_menu()` dove passo una serie di key-value in un array:
+
+```php
+<?php 
+wp_list_comments(
+  array(
+    'avatar_size' => 120,
+    'style' => 'div', // default è un UL
+  )
+);
+?>
+```
+
+e per i reply ho una form, in cui verifico prima se i commenti sono aperti:
+
+```php
+ if(comments_open()) {
+   comment_form(
+     array(
+       'class_form' => '', // la classe css della form
+       'title_reply_before' => '<h2 id="reply-title" class="comment-reply-title">', // che pubblica "Leave a Reply"
+       'title_reply_after' => '</h2>'
+     )
+   );
+ }
+```
+
+I commenti vanno approvati o posso impostare un auto approvazione.
+
+# The Archive
+
+Creiamo il file content-archive.php, in cui utilizziamo: `the_title();`, `the_date();`, `the_excerpt()`, `comments_number()` e per un Read More dinamico in href vado a metter `<?php the_permalink(); ?>` che userò anche sul title per far si che sia cliccabile, mentre per la thumbnail metterò in src `<?php the_post_thumbnail_url('thumbnail'); >`, con la stringa 'thumbnail' specifico che voglio una dimensione ridotta che ho specificato nel media size di WordPress.
+
+Tutto questo all'interno di una struttura HTML, con div, h3, span, a ecc.. :)
+
+in index.php inserisco:
+
+
+```php
+<?php
+  get_header();
+?>
+  <article class="content">
+  <?php
+    if(have_posts()) {
+      while(have_posts()) {
+        the_post();
+        // 1° parametro è il file path , il secondo è il type post
+        get_template_part('template-parts/content', 'archive');
+      }
+    }
+  ?>
+  </article>
+  <?php
+    the_posts_pagination();
+  ?>
+<?php
+  get_footer();
+?>
+```
+
+La paginazione la imposto su Impostazione -> Lettura o Settings -> Reading nel backend WordPress.
+
+# Content-page
+
+Creo la pagina content-page.php in template-parts:
+
+```php
+<div class="container">
+
+  <?php
+    the_content();
+  ?>
+
+</div>
+```
+
+e in page.php avrò:
+
+```php
+<?php
+  get_header();
+?>
+  <article>
+  <?php
+    if(have_posts()) {
+      while(have_posts()) {
+        the_post();
+        // 1° parametro è il file path , il secondo è il type post
+        get_template_part('template-parts/content', 'page');
+      }
+    }
+  ?>
+  </article>
+<?php
+  get_footer();
+?>
+```
+
+# Widget
+
+Sono porzioni d'area di personalizzazione del tema da parte dell'utente. Solitamente li trovi nelle sidebar e nel footer. Per aggiungere questa feature devo inserire in `functions.php` una funzione del tipo:
+
+```php
+function lftheme_widget_areas() {
+  register_sidebar(
+    array(
+      'before_title' => '<h2>',
+      'after_title' => '</h2>',
+      'before_widget' => '',
+      'after_widget' => '',
+      'name' => 'Sidebar Area',
+      'id' => 'sidebar-1',
+      'description' => 'Sidebar Widget Area'
+    )
+  );
+
+  register_sidebar(
+    array(
+      'before_title' => '',
+      'after_title' => '',
+      'before_widget' => '',
+      'after_widget' => '',
+      'name' => 'Footer Area',
+      'id' => 'footer-1',
+      'description' => 'Footer Widget Area'
+    )
+  );
+}
+
+add_action('widgets_init', 'lftheme_widget_areas');
+```
+
+Ora in Appearance in Widgets avrò il mio Sidebar a cui posso aggiungere feature col drag-and-drop.
+
+e ora devo inserire il widget in un template file, ad es. header.php dove visualizzerò il widget, passandogli l'ID del Widget:
+
+```php
+// header.php
+...
+<?php
+  dynamic_sidebar('sidebar-1');
+?>
+...
+```
+
+ed in footer:
+
+```php
+// footer.php
+...
+<?php
+  dynamic_sidebar('footer-1');
+?>
+...
+```
+
+potrei creare il widget dove inserire i social link.
+
+# 404 e Search Page
+
+Il file 404.php è responsabile per la visualizzazione di pagine non esistenti.
+
+```php
+<?php
+  get_header();
+?>
+  <article>
+  <h1>Page Not Found</h1>
+  <?php 
+    get_search_form();
+  ?>
+  </article>
+<?php
+  get_footer();
+?>
+```
+
+e ora, similmente ad archive, creo la search.php:
+
+```php
+<?php
+  get_header();
+?>
+  <article class="content">
+  <?php
+    if(have_posts()) {
+      while(have_posts()) {
+        the_post();
+        // 1° parametro è il file path , il secondo è il type post
+        get_template_part('template-parts/content', 'archive');
+      }
+    }
+  ?>
+  </article>
+  <?php
+    the_posts_pagination();
+  ?>
+<?php
+  get_footer();
+?>
+```
+
+la search form potrei metterla anche in footer.php o farlo con i widget in Appearance -> Widgets e in Footer Area metto Search.
+
 # Organizziamo functions.php
 
 Per organizzare al meglio functions.php posso creare una cartella `lib` con un file `helpers.php` dove posso inserire le mie funzioni helper (posso fare come meglio credo con i nomi).
 
 In functions.php avrò:
 
-```
+```php
 <?php
   require_once('lib/helpers.php');
 ?>
@@ -427,6 +862,7 @@ function lftheme_readmore_link() {
 ?>
 ```
 
+
 # Altra lib
 
 L'obiettivo è avere un functions.php così fatto:
@@ -445,7 +881,7 @@ creo la libreria per iniettare i miei stiles e script in lib creo il file enqueu
 
 function lftheme_assets() {
     // wp_enqueue_style('handler', src, deps, ver, media)
-    wp_enqueue_style( 'lftheme-stylesheet', get_template_directory_uri(  ) . '/dist/assets/css/main.css', array(), '1.0.0', 'all');
+    wp_enqueue_style( 'lftheme-stylesheet', get_template_directory_uri() . '/dist/assets/css/main.css', array(), '1.0.0', 'all');
 }
 
 // add_action(action_name, function_name)
@@ -482,7 +918,7 @@ Installa GULP con `npm i gulp` e installa il cli con `npm i -g gulp-cli`. Instal
 
 e crea il file gulp.babel.js:
 
-```
+```js
 import gulp from 'gulp';
 
 export const hello = (done) => {
@@ -990,19 +1426,30 @@ e nel package.json vado ad inserire uno script: di comodo:
 "bundle": "gulp bundle --prod"
 ```
 
-# Placeholder
+# Placeholder Theme Name
 
-Abbiamo visto che le funzioni php le chiamiamo con un prefisso e anche il text domain. Posso creare un placeholder.
+Abbiamo visto che le funzioni php le chiamiamo con un prefisso e anche il text domain. Posso creare un placeholder, che posso chiamare come meglio credo. In questo caso lo chiamo `_themeName`.
 Attenzione che se chiami il tema con caratteri illeciti puoi avere problemi con i nomi delle funzioni, tipo usare '-' al posto di '_'.
+
+Nelle funzioni dove uso il prefix come ad es:
 
 ```php
 function lftheme_assets() {
 ```
 
-in 
+cambio in 
 
 ```php
 function _themename_assets() {
+```
+
+e anche nel CSS style.css:
+
+```css
+/*
+Theme name: _themename
+Author: Lorenzo Franceschini
+*/
 ```
 
 
@@ -1016,7 +1463,7 @@ import info from './package.json';
 export const compress = () => {
   return gulp
     .src(paths.package.src)
-    .pipe(replace('_themename', info.name.replace('-', '_')))
+    .pipe(replace(themePlaceholder, info.name.replace('-', '_')))
     .pipe(zip(`${info.name}.zip`.replace('-', '_')))
     .pipe(gulp.dest(paths.package.dest));
 };
@@ -1042,6 +1489,7 @@ import info from './package.json';
 
 const server = browserSync.create();
 const URL = 'http://base.local/';
+const themePlaceholder = '_themename';
 
 const prod = yargs.argv.prod;
 
@@ -1172,7 +1620,7 @@ export const watch = () => {
 export const compress = () => {
   return gulp
     .src(paths.package.src)
-    .pipe(replace('_themename', info.name.replace('-', '_')))
+    .pipe(replace(themePlaceholder, info.name.replace('-', '_')))
     .pipe(zip(`${info.name}.zip`.replace('-', '_')))
     .pipe(gulp.dest(paths.package.dest));
 };
